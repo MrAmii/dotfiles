@@ -1,0 +1,35 @@
+# Font configuration
+font-family = "JetBrains Mono"
+font-size = 
+
+# CRT Green Phosphor theme
+background = 000000
+foreground = 33ff33
+
+# Palette (various shades of green for syntax highlighting)
+palette = 0=#001100
+palette = 1=#00ff00
+palette = 2=#00cc00
+palette = 3=#00ff66
+palette = 4=#33ff33
+palette = 5=#66ff66
+palette = 6=#00ffcc
+palette = 7=#99ff99
+palette = 8=#003300
+palette = 9=#00ff00
+palette = 10=#00dd00
+palette = 11=#00ff88
+palette = 12=#44ff44
+palette = 13=#77ff77
+palette = 14=#00ffdd
+palette = 15=#ccffcc
+
+# CRT effects
+window-padding-x = 10
+window-padding-y = 10
+cursor-style = block
+cursor-style-blink = true
+
+# Opacity for subtle glow effect
+background-opacity = 0.95
+unfocused-split-opacity = 0.7

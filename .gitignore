@@ -1,0 +1,27 @@
+# Neovim
+nvim/lazy-lock.json
+nvim/.netrw*
+nvim/plugin/
+nvim/undo/
+nvim/swap/
+
+# Backup files
+*.bak
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Sensitive data
+*secret*
+*password*
+*token*
+*.pem
+*.key
+
+# Cache
+*.cache
+.cache/

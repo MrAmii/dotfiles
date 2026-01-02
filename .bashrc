@@ -132,3 +132,12 @@ ac() {
     fi
 }
 
+
+# Tmux helper function
+tmux() {
+    if [ "$1" = "help" ]; then
+        bash ~/dotfiles/scripts/tmux-help.sh
+    else
+        command tmux "$@"
+    fi
+}

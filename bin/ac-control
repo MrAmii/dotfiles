@@ -1,0 +1,3 @@
+#!/bin/bash
+# Wrapper for ac-control.py
+python3 ~/dotfiles/scripts/ac-control.py "$@"

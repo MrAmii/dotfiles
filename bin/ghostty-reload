@@ -1,0 +1,9 @@
+#!/bin/bash
+# Reload Ghostty configuration by simulating Super+R keypress
+
+if command -v xdotool &> /dev/null; then
+    # Send Super+R to the active window
+    xdotool key Super+r &> /dev/null
+else
+    echo "Press Windows+R to reload Ghostty config"
+fi

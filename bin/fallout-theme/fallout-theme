@@ -1,0 +1,221 @@
+#!/bin/bash
+
+# Fallout Pip-Boy Complete Theme Manager
+# Applies terminal colors AND sets Ghostty background wallpaper
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WALLPAPER_DIR="$SCRIPT_DIR/wallpapers"
+GHOSTTY_CONFIG="$HOME/.config/ghostty/config"
+
+# Color definitions - organized for easy expansion
+declare -A COLORS
+
+# Classic Green (Pip-Boy 3000 default)
+COLORS[green_fg]="#00FF00"
+COLORS[green_bg]="#0A0A0A"
+COLORS[green_name]="Classic Green"
+COLORS[green_desc]="Original Pip-Boy phosphor green"
+COLORS[green_wallpaper]="fallout-theme-green.png"
+
+# Light Blue (Vault-Tec Blue)
+COLORS[blue_fg]="#5599FF"
+COLORS[blue_bg]="#0A0A0F"
+COLORS[blue_name]="Light Blue"
+COLORS[blue_desc]="Vault-Tec cool blue tone"
+COLORS[blue_wallpaper]="fallout-theme-blue.png"
+
+# Cyan (Bright cyan-green)
+COLORS[cyan_fg]="#00FFFF"
+COLORS[cyan_bg]="#0A0F0F"
+COLORS[cyan_name]="Cyan"
+COLORS[cyan_desc]="Bright cyan terminal look"
+COLORS[cyan_wallpaper]="fallout-theme-cyan.png"
+
+# Amber/Orange (Fallout classic warm tone)
+COLORS[amber_fg]="#FFB000"
+COLORS[amber_bg]="#0F0700"
+COLORS[amber_name]="Amber"
+COLORS[amber_desc]="Warm orange, easy on eyes"
+COLORS[amber_wallpaper]="fallout-theme-amber.png"
+
+# White (High contrast)
+COLORS[white_fg]="#FFFFFF"
+COLORS[white_bg]="#0A0A0A"
+COLORS[white_name]="White"
+COLORS[white_desc]="High contrast, bright"
+COLORS[white_wallpaper]="fallout-theme-white.png"
+
+# Red (Danger/Alert theme)
+COLORS[red_fg]="#FF3333"
+COLORS[red_bg]="#0F0000"
+COLORS[red_name]="Red"
+COLORS[red_desc]="Danger alert vibes"
+COLORS[red_wallpaper]="fallout-theme-red.png"
+
+# Purple (Custom alternative)
+COLORS[purple_fg]="#CC66FF"
+COLORS[purple_bg]="#0A000F"
+COLORS[purple_name]="Purple"
+COLORS[purple_desc]="Custom mystical theme"
+COLORS[purple_wallpaper]="fallout-theme-purple.png"
+
+# Pink (Custom alternative)
+COLORS[pink_fg]="#FF66B2"
+COLORS[pink_bg]="#0F000A"
+COLORS[pink_name]="Pink"
+COLORS[pink_desc]="Sweet bubblegum vibes"
+COLORS[pink_wallpaper]="fallout-theme-pink.png"
+
+# Function to update all Ghostty config settings at once
+update_ghostty_config() {
+    local fg=$1
+    local wallpaper_file=$2
+    local wallpaper_path="$WALLPAPER_DIR/$wallpaper_file"
+
+    if [ ! -f "$wallpaper_path" ]; then
+        echo "Error: Wallpaper not found: $wallpaper_path"
+        return 1
+    fi
+
+    # Remove existing theme lines
+    if [ -f "$GHOSTTY_CONFIG" ]; then
+        sed -i '/^foreground =/d' "$GHOSTTY_CONFIG"
+        sed -i '/^background =/d' "$GHOSTTY_CONFIG"
+        sed -i '/^background-image =/d' "$GHOSTTY_CONFIG"
+        sed -i '/^background-image-fit =/d' "$GHOSTTY_CONFIG"
+    fi
+
+    # Write all theme settings together
+    {
+        echo "foreground = $fg"
+        echo "background-image = $wallpaper_path"
+        echo "background-image-fit = none"
+    } >> "$GHOSTTY_CONFIG"
+}
+
+# Function to update cursor shader colors
+update_cursor_shader() {
+    local fg_hex=$1
+    local shader_file="$HOME/.config/ghostty/shaders/cursor_blaze_no_trail.glsl"
+
+    if [ ! -f "$shader_file" ]; then
+        echo "⚠ Cursor shader not found, skipping"
+        return 0
+    fi
+
+    # Convert hex to RGB (0.0 to 1.0 range)
+    local r=$(printf "%.3f" $(echo "scale=3; $((16#${fg_hex:1:2})) / 255" | bc))
+    local g=$(printf "%.3f" $(echo "scale=3; $((16#${fg_hex:3:2})) / 255" | bc))
+    local b=$(printf "%.3f" $(echo "scale=3; $((16#${fg_hex:5:2})) / 255" | bc))
+
+    # Update TRAIL_COLOR
+    sed -i "s/const vec4 TRAIL_COLOR = vec4(.*);/const vec4 TRAIL_COLOR = vec4($r, $g, $b, 1.0);/" "$shader_file"
+
+    echo "✓ Cursor shader color updated"
+}
+
+# Function to update tmux colors
+update_tmux_colors() {
+    local fg_hex=$1
+    local tmux_conf="$HOME/.tmux.conf"
+
+    if [ ! -f "$tmux_conf" ]; then
+        echo "⚠ Tmux config not found, skipping"
+        return 0
+    fi
+
+    # Update tmux config with hex color (tmux accepts #RRGGBB format)
+    sed -i "s/fg=#[0-9A-Fa-f]\{6\}/fg=$fg_hex/g" "$tmux_conf"
+    sed -i "s/fg=green/fg=$fg_hex/g" "$tmux_conf"
+    sed -i "s/fg=brightgreen/fg=$fg_hex/g" "$tmux_conf"
+
+    # Refresh all tmux sessions if tmux is running
+    if command -v tmux &> /dev/null && tmux list-sessions &> /dev/null 2>&1; then
+        tmux source-file "$tmux_conf"
+        tmux refresh-client -S
+    fi
+
+    echo "✓ Tmux colors updated"
+}
+
+# Save current theme to file
+save_current_theme() {
+    local theme=$1
+    echo "$theme" > "$SCRIPT_DIR/.current_theme"
+}
+
+# Function to apply complete theme
+apply_theme() {
+    local scheme=$1
+    local fg_key="${scheme}_fg"
+    local bg_key="${scheme}_bg"
+    local name_key="${scheme}_name"
+    local wallpaper_key="${scheme}_wallpaper"
+
+    local fg="${COLORS[$fg_key]}"
+    local bg="${COLORS[$bg_key]}"
+    local name="${COLORS[$name_key]}"
+    local wallpaper="${COLORS[$wallpaper_key]}"
+
+    if [ -z "$fg" ] || [ -z "$bg" ]; then
+        echo "Error: Unknown color scheme '$scheme'"
+        return 1
+    fi
+
+    echo "Applying Pip-Boy theme: $name"
+    echo ""
+
+    # Update Ghostty config (foreground + wallpaper together)
+    update_ghostty_config "$fg" "$wallpaper"
+    echo "✓ Ghostty config updated"
+
+    # Update cursor shader
+    update_cursor_shader "$fg"
+
+    # Update tmux colors
+    update_tmux_colors "$fg"
+
+    # Save current theme
+    save_current_theme "$scheme"
+
+    echo ""
+    ~/bin/ghostty-reload
+}
+
+# Function to show available schemes
+list_schemes() {
+    echo "Available Pip-Boy color schemes:"
+    echo ""
+    echo "  green   - ${COLORS[green_name]}"
+    echo "            ${COLORS[green_desc]}"
+    echo ""
+    echo "  blue    - ${COLORS[blue_name]}"
+    echo "            ${COLORS[blue_desc]}"
+    echo ""
+    echo "  cyan    - ${COLORS[cyan_name]}"
+    echo "            ${COLORS[cyan_desc]}"
+    echo ""
+    echo "  amber   - ${COLORS[amber_name]}"
+    echo "            ${COLORS[amber_desc]}"
+    echo ""
+    echo "  white   - ${COLORS[white_name]}"
+    echo "            ${COLORS[white_desc]}"
+    echo ""
+    echo "  red     - ${COLORS[red_name]}"
+    echo "            ${COLORS[red_desc]}"
+    echo ""
+    echo "  purple  - ${COLORS[purple_name]}"
+    echo "            ${COLORS[purple_desc]}"
+    echo ""
+    echo "  pink    - ${COLORS[pink_name]}"
+    echo "            ${COLORS[pink_desc]}"
+    echo ""
+    echo "Usage: fallout-theme <scheme>"
+}
+
+# Main logic
+if [ $# -eq 0 ]; then
+    list_schemes
+else
+    apply_theme "$1"
+fi
